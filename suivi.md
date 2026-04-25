@@ -86,6 +86,43 @@ backend/
 
 ---
 
+## Tests Backend — État : ✅ Complet
+
+### Structure
+```
+backend/
+├── vitest.config.ts               ✅ Config vitest (globalSetup + setupFiles + coverage)
+└── src/
+    ├── app.ts                     ✅ Express app exportée (sans listen) — pour Supertest
+    ├── index.ts                   ✅ Refactoré : importe app.ts + listen
+    └── __tests__/
+        ├── globalSetup.ts         ✅ Charge dotenv avant les workers
+        ├── setup.ts               ✅ Charge dotenv dans chaque worker
+        ├── config/
+        │   └── supabase.test.ts   ✅ Connexion réelle BDD (skip auto si .env absent)
+        ├── middleware/
+        │   ├── errorHandler.test.ts ✅ Tests unitaires purs (createError + errorHandler)
+        │   └── auth.test.ts       ✅ requireAuth avec mock Supabase
+        ├── lib/
+        │   └── helpers.test.ts    ✅ getUserFamily + logTaskHistory avec mock Supabase
+        └── routes/
+            ├── health.test.ts     ✅ GET /health via Supertest
+            └── auth.test.ts       ✅ Register + Login + Me via Supertest + mock Supabase
+```
+
+### Résultats
+- **32 tests passés**, 5 skippés (tests connexion BDD nécessitent `.env`)
+- Pour activer les tests de connexion BDD : créer `backend/.env` depuis `.env.example`
+
+### Commandes
+```bash
+npm test               # run une fois
+npm run test:watch     # mode watch
+npm run test:coverage  # avec rapport de couverture
+```
+
+---
+
 ## Frontend — État : ⏳ Non commencé
 
 ---
