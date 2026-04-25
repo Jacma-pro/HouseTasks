@@ -4,17 +4,19 @@ import { useForm } from 'react-hook-form';
 import { Plus, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { tasksApi, type CreateTaskPayload } from '../api/tasks';
+import { familiesApi } from '../api/families';
 import type { Task, TaskStatus } from '../types';
 import Card from '../components/ui/Card';
 import { StatusBadge, PriorityBadge } from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import Avatar from '../components/ui/Avatar';
 import TaskModal from '../components/ui/TaskModal';
 import Overlay from '../components/ui/Overlay';
 
 const STATUSES: { value: TaskStatus | 'all'; label: string }[] = [
   { value: 'all',         label: 'Toutes' },
-  { value: 'pending',     label: 'En attente' },
+  { value: 'pending',     label: 'Attente' },
   { value: 'in_progress', label: 'En cours' },
   { value: 'completed',   label: 'Terminées' },
   { value: 'cancelled',   label: 'Annulées' },
@@ -23,6 +25,14 @@ const STATUSES: { value: TaskStatus | 'all'; label: string }[] = [
 function CreateTaskModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Record<string, string>>();
   const [apiError, setApiError] = useState('');
+  const [assignedTo, setAssignedTo] = useState<string[]>([]);
+
+  const { data: family } = useQuery({ queryKey: ['family'], queryFn: familiesApi.getMyFamily });
+  const members = family?.members ?? [];
+
+  function toggleMember(id: string) {
+    setAssignedTo(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
 
   async function onSubmit(data: Record<string, string>) {
     setApiError('');
@@ -31,8 +41,8 @@ function CreateTaskModal({ onClose, onCreated }: { onClose: () => void; onCreate
         title: data.title,
         description: data.description || undefined,
         priority: (data.priority as 'low' | 'medium' | 'high') ?? 'medium',
-        due_date: data.due_date || undefined,
-        assigned_to: [],
+        due_date: data.due_date ? `${data.due_date}T00:00:00.000Z` : undefined,
+        assigned_to: assignedTo,
         helpers: [],
       };
       await tasksApi.create(payload);
@@ -79,6 +89,35 @@ function CreateTaskModal({ onClose, onCreated }: { onClose: () => void; onCreate
           </div>
           <Input id="due_date" type="date" label="Échéance" {...register('due_date')} />
         </div>
+
+        {members.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <p className="text-sm font-medium text-gray-700">Assigner à</p>
+            <div className="flex flex-wrap gap-2">
+              {members.map(m => {
+                if (!m.user) return null;
+                const selected = assignedTo.includes(m.user.id);
+                return (
+                  <button
+                    key={m.user.id}
+                    type="button"
+                    onClick={() => toggleMember(m.user!.id)}
+                    className={[
+                      'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium border transition-colors cursor-pointer',
+                      selected
+                        ? 'bg-primary-600 text-white border-primary-600'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300',
+                    ].join(' ')}
+                  >
+                    <Avatar name={m.user.name} avatar_url={m.user.avatar_url} size="xs" />
+                    {m.user.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {apiError && <p className="rounded-xl bg-red-50 px-4 py-2 text-sm text-red-600">{apiError}</p>}
         <div className="flex gap-2 mt-1">
           <Button variant="ghost" fullWidth onClick={onClose} type="button">Annuler</Button>
@@ -102,37 +141,40 @@ export default function TasksPage() {
 
   const deleteMutation = useMutation({
     mutationFn: tasksApi.delete,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }).then(() =>
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+    ),
   });
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: TaskStatus }) =>
       tasksApi.updateStatus(id, status),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }).then(() =>
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+    ),
   });
 
   return (
     <div className="flex flex-col px-4 py-6 gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Tâches</h1>
-        <Button size="sm" onClick={() => setShowCreate(true)}>
-          <Plus size={16} /> Nouvelle
-        </Button>
-      </div>
+      <h1 className="text-xl font-bold text-gray-900">Tâches</h1>
 
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
+      <div className="flex rounded-2xl bg-gray-100 p-1 gap-0.5">
         {STATUSES.map(({ value, label }) => (
           <button
             key={value}
             onClick={() => setFilter(value)}
-            className={[
-              'shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer',
-              filter === value
-                ? 'bg-primary-600 text-white'
-                : 'bg-white text-gray-600 border border-gray-200 hover:border-primary-300',
-            ].join(' ')}
+            className="relative flex-1 rounded-xl py-2.5 min-h-[44px] text-[11px] font-semibold cursor-pointer transition-colors"
           >
-            {label}
+            {filter === value && (
+              <motion.div
+                layoutId="filter-pill"
+                className="absolute inset-0 rounded-xl bg-white shadow-sm"
+                transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+              />
+            )}
+            <span className={`relative z-10 transition-colors duration-150 ${filter === value ? 'text-gray-900' : 'text-gray-500'}`}>
+              {label}
+            </span>
           </button>
         ))}
       </div>
@@ -197,9 +239,22 @@ export default function TasksPage() {
       {showCreate && (
         <CreateTaskModal
           onClose={() => setShowCreate(false)}
-          onCreated={() => { qc.invalidateQueries({ queryKey: ['tasks'] }); setShowCreate(false); }}
+          onCreated={() => {
+            qc.invalidateQueries({ queryKey: ['tasks'] });
+            qc.invalidateQueries({ queryKey: ['dashboard'] });
+            setShowCreate(false);
+          }}
         />
       )}
+
+      <motion.button
+        onClick={() => setShowCreate(true)}
+        whileTap={{ scale: 0.93 }}
+        className="fixed bottom-20 right-4 z-40 flex items-center gap-2 rounded-2xl bg-primary-600 px-5 py-3.5 text-sm font-semibold text-white shadow-lg hover:bg-primary-700 transition-colors cursor-pointer"
+      >
+        <Plus size={18} strokeWidth={2.5} />
+        Nouvelle
+      </motion.button>
     </div>
   );
 }

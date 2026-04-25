@@ -14,11 +14,13 @@ export interface Family {
 }
 
 export interface FamilyMember {
-  user_id: string;
-  family_id: string;
   role: 'admin' | 'member';
   joined_at: string;
-  profile?: User;
+  user?: {
+    id: string;
+    name: string;
+    avatar_url?: string;
+  };
 }
 
 export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
@@ -53,16 +55,29 @@ export interface Availability {
   created_at: string;
 }
 
+export interface TaskStats {
+  total: number;
+  pending: number;
+  in_progress: number;
+  completed: number;
+  cancelled: number;
+}
+
 export interface Dashboard {
-  tasks: {
-    total: number;
-    pending: number;
-    in_progress: number;
-    completed: number;
-    cancelled: number;
-  };
-  recentTasks: Task[];
+  family: Family;
   members: FamilyMember[];
+  tasks: {
+    stats: TaskStats;
+    due_soon: Task[];
+    my_tasks: Task[];
+  };
+  recent_activity: {
+    id: string;
+    action: string;
+    created_at: string;
+    task?: { id: string; title: string };
+    changer?: { id: string; name: string };
+  }[];
 }
 
 export interface ApiError {

@@ -26,7 +26,6 @@ router.get('/', requireAuth, async (req: Request, res: Response, next: NextFunct
       membersResult,
       tasksResult,
       myAssignmentsResult,
-      recentHistoryResult,
     ] = await Promise.all([
       supabaseAdmin.from('families').select('*').eq('id', familyId).single(),
       supabaseAdmin
@@ -41,16 +40,18 @@ router.get('/', requireAuth, async (req: Request, res: Response, next: NextFunct
         .from('task_assignments')
         .select('task_id')
         .eq('user_id', user.id),
-      supabaseAdmin
-        .from('task_history')
-        .select('id, action, created_at, changed_by, task:tasks(id, title), changer:profiles(id, name)')
-        .in(
-          'task_id',
-          supabaseAdmin.from('tasks').select('id').eq('family_id', familyId) as unknown as string[]
-        )
-        .order('created_at', { ascending: false })
-        .limit(10),
     ]);
+
+    const familyTaskIds = (tasksResult.data ?? []).map((t: { id: string }) => t.id);
+
+    const recentHistoryResult = familyTaskIds.length > 0
+      ? await supabaseAdmin
+          .from('task_history')
+          .select('id, action, created_at, changed_by, task:tasks(id, title), changer:profiles(id, name)')
+          .in('task_id', familyTaskIds)
+          .order('created_at', { ascending: false })
+          .limit(10)
+      : { data: [] };
 
     const tasks = tasksResult.data ?? [];
     const myTaskIds = new Set((myAssignmentsResult.data ?? []).map((a: { task_id: string }) => a.task_id));

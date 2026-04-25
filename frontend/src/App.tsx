@@ -7,6 +7,7 @@ import RegisterPage from './pages/RegisterPage';
 import OnboardingPage from './pages/OnboardingPage';
 import DashboardPage from './pages/DashboardPage';
 import TasksPage from './pages/TasksPage';
+import AgendaPage from './pages/AgendaPage';
 import AvailabilityPage from './pages/AvailabilityPage';
 import ProfilePage from './pages/ProfilePage';
 
@@ -28,6 +29,7 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/agenda" element={<AgendaPage />} />
               <Route path="/availability" element={<AvailabilityPage />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>

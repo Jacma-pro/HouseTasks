@@ -21,7 +21,7 @@ export default function Overlay({ children, onClose }: OverlayProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-4 sm:pb-0"
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-20 sm:pb-0"
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <motion.div
@@ -29,7 +29,7 @@ export default function Overlay({ children, onClose }: OverlayProps) {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 40, opacity: 0 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+          className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl max-h-[80vh] overflow-y-auto"
         >
           <div className="flex items-start justify-between mb-1">
             <div />

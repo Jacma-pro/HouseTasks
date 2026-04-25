@@ -1,10 +1,10 @@
 interface AvatarProps {
   name: string;
   avatar_url?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
 }
 
-const sizes = { sm: 'h-8 w-8 text-xs', md: 'h-10 w-10 text-sm', lg: 'h-12 w-12 text-base' };
+const sizes = { xs: 'h-5 w-5 text-[10px]', sm: 'h-8 w-8 text-xs', md: 'h-10 w-10 text-sm', lg: 'h-12 w-12 text-base' };
 
 const colors = [
   'bg-primary-500', 'bg-accent-500', 'bg-purple-500',

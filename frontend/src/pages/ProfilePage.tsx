@@ -142,10 +142,10 @@ export default function ProfilePage() {
           {family.members?.length > 0 && (
             <div className="flex flex-col gap-2 mb-3">
               {family.members.map(m => (
-                <div key={m.user_id} className="flex items-center justify-between">
+                <div key={m.user?.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Avatar name={m.profile?.name ?? '?'} avatar_url={m.profile?.avatar_url} size="sm" />
-                    <p className="text-sm text-gray-800">{m.profile?.name}</p>
+                    <Avatar name={m.user?.name ?? '?'} avatar_url={m.user?.avatar_url} size="sm" />
+                    <p className="text-sm text-gray-800">{m.user?.name}</p>
                   </div>
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${m.role === 'admin' ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-500'}`}>
                     {m.role === 'admin' ? 'Admin' : 'Membre'}

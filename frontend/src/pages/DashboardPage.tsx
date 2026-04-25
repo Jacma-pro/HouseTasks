@@ -24,8 +24,8 @@ function StatCard({ label, value, icon, color }: { label: string; value: number;
 
 function TaskRow({ task }: { task: Task }) {
   return (
-    <Link to={`/tasks/${task.id}`} className="block">
-      <div className="flex items-center justify-between gap-3 py-3 border-b border-gray-50 last:border-0 hover:bg-gray-50 -mx-4 px-4 transition-colors rounded-xl">
+    <Link to="/tasks" className="block">
+      <div className="flex items-center justify-between gap-3 min-h-[44px] py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 -mx-4 px-4 transition-colors rounded-xl cursor-pointer">
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium text-gray-900 text-sm">{task.title}</p>
           {task.due_date && (
@@ -77,25 +77,25 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 gap-3">
           <StatCard
             label="En attente"
-            value={data.tasks.pending}
+            value={data.tasks.stats.pending}
             icon={<ListTodo size={18} className="text-gray-600" />}
             color="bg-gray-100"
           />
           <StatCard
             label="En cours"
-            value={data.tasks.in_progress}
+            value={data.tasks.stats.in_progress}
             icon={<Clock size={18} className="text-blue-600" />}
             color="bg-blue-100"
           />
           <StatCard
             label="Terminées"
-            value={data.tasks.completed}
+            value={data.tasks.stats.completed}
             icon={<CheckCircle2 size={18} className="text-primary-600" />}
             color="bg-primary-100"
           />
           <StatCard
             label="Annulées"
-            value={data.tasks.cancelled}
+            value={data.tasks.stats.cancelled}
             icon={<XCircle size={18} className="text-red-500" />}
             color="bg-red-100"
           />
@@ -108,29 +108,37 @@ export default function DashboardPage() {
           <h2 className="mb-3 font-semibold text-gray-900">Membres</h2>
           <div className="flex gap-3 overflow-x-auto pb-1">
             {data.members.map((m) => (
-              <div key={m.user_id} className="flex flex-col items-center gap-1.5 shrink-0">
-                <Avatar name={m.profile?.name ?? '?'} avatar_url={m.profile?.avatar_url} />
-                <p className="text-xs text-gray-600 max-w-[60px] truncate text-center">{m.profile?.name}</p>
+              <div key={m.user?.id} className="flex flex-col items-center gap-1.5 shrink-0">
+                <Avatar name={m.user?.name ?? '?'} avatar_url={m.user?.avatar_url} />
+                <p className="text-xs text-gray-600 max-w-[60px] truncate text-center">{m.user?.name}</p>
               </div>
             ))}
           </div>
         </Card>
       )}
 
-      {/* Tâches récentes */}
+      {/* Mes tâches */}
       <Card>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-900">Tâches récentes</h2>
+          <h2 className="font-semibold text-gray-900">Mes tâches</h2>
           <Link to="/tasks" className="text-sm font-medium text-primary-600 hover:underline">
             Voir tout
           </Link>
         </div>
-        {data?.recentTasks && data.recentTasks.length > 0 ? (
-          data.recentTasks.slice(0, 5).map((task) => <TaskRow key={task.id} task={task} />)
+        {data?.tasks.my_tasks && data.tasks.my_tasks.length > 0 ? (
+          data.tasks.my_tasks.slice(0, 5).map((task) => <TaskRow key={task.id} task={task} />)
         ) : (
-          <p className="py-4 text-center text-sm text-gray-400">Aucune tâche pour l'instant</p>
+          <p className="py-4 text-center text-sm text-gray-400">Aucune tâche assignée</p>
         )}
       </Card>
+
+      {/* Échéances proches */}
+      {data?.tasks.due_soon && data.tasks.due_soon.length > 0 && (
+        <Card>
+          <h2 className="font-semibold text-gray-900 mb-3">Échéances cette semaine</h2>
+          {data.tasks.due_soon.slice(0, 3).map((task) => <TaskRow key={task.id} task={task} />)}
+        </Card>
+      )}
     </div>
   );
 }
