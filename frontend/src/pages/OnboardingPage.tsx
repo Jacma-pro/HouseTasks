@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Users, Link as LinkIcon, ChevronLeft } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import Logo from '../components/ui/Logo';
 import { familiesApi } from '../api/families';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -61,6 +62,11 @@ export default function OnboardingPage() {
         )}
 
         <div className="mb-6 text-center">
+          {step === 'choice' && (
+            <div className="mx-auto mb-4 drop-shadow-md w-fit">
+              <Logo size={56} />
+            </div>
+          )}
           <h1 className="text-2xl font-bold text-gray-900">
             {step === 'choice' ? 'Bienvenue 👋' : step === 'create' ? 'Créer une famille' : 'Rejoindre une famille'}
           </h1>
