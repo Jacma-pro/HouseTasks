@@ -6,7 +6,6 @@ import { Mail, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
-import Logo from '../components/ui/Logo';
 import { useState } from 'react';
 
 const schema = z.object({
@@ -39,8 +38,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-3 drop-shadow-md">
-            <Logo size={56} />
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-600 text-white text-2xl font-bold shadow-card">
+            H
           </div>
           <h1 className="text-2xl font-bold text-gray-900">HouseTasks</h1>
           <p className="mt-1 text-sm text-gray-500">Connexion à votre famille</p>
