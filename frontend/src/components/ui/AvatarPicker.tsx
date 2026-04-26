@@ -22,7 +22,7 @@ interface AvatarPickerProps {
   isSaving?: boolean;
 }
 
-export default function AvatarPicker({ name, currentAvatarUrl, onSave, onClose, isSaving }: AvatarPickerProps) {
+export default function AvatarPicker({ currentAvatarUrl, onSave, onClose, isSaving }: AvatarPickerProps) {
   const parsed = currentAvatarUrl?.startsWith('emoji:')
     ? { emoji: currentAvatarUrl.split(':')[1], color: currentAvatarUrl.split(':')[2] }
     : null;
