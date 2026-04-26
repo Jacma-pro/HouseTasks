@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Plus, Trash2, Repeat, Calendar, Clock } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { availabilityApi, type AvailabilityPayload } from '../api/availability';
 import type { Availability } from '../types';
 import Card from '../components/ui/Card';
@@ -46,7 +47,7 @@ function SlotCard({ slot, onDelete }: { slot: Availability; onDelete: () => void
       </div>
       <button
         onClick={onDelete}
-        className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer"
+        className="flex items-center justify-center rounded-xl p-2.5 min-h-[44px] min-w-[44px] text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer"
         aria-label="Supprimer"
       >
         <Trash2 size={16} />
@@ -88,20 +89,25 @@ function AddSlotModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
     <Overlay onClose={onClose}>
       <h2 className="mb-4 text-lg font-bold text-gray-900">Ajouter un créneau</h2>
 
-      <div className="flex gap-2 mb-4">
+      {/* Segmented control Récurrent / Ponctuel */}
+      <div className="flex rounded-2xl bg-gray-100 p-1 gap-0.5 mb-4">
         {[{ v: true, l: 'Récurrent' }, { v: false, l: 'Ponctuel' }].map(({ v, l }) => (
           <button
             key={String(v)}
             type="button"
             onClick={() => setIsRecurring(v)}
-            className={[
-              'flex-1 rounded-xl py-2 text-sm font-semibold transition-colors cursor-pointer border',
-              isRecurring === v
-                ? 'bg-primary-600 text-white border-primary-600'
-                : 'bg-white text-gray-600 border-gray-200',
-            ].join(' ')}
+            className="relative flex-1 rounded-xl min-h-[44px] text-sm font-semibold cursor-pointer transition-colors"
           >
-            {l}
+            {isRecurring === v && (
+              <motion.div
+                layoutId="slot-type-pill"
+                className="absolute inset-0 rounded-xl bg-white shadow-sm"
+                transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+              />
+            )}
+            <span className={`relative z-10 transition-colors duration-150 ${isRecurring === v ? 'text-gray-900' : 'text-gray-500'}`}>
+              {l}
+            </span>
           </button>
         ))}
       </div>
@@ -163,12 +169,7 @@ export default function AvailabilityPage() {
 
   return (
     <div className="flex flex-col px-4 py-6 gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Disponibilités</h1>
-        <Button size="sm" onClick={() => setShowAdd(true)}>
-          <Plus size={16} /> Ajouter
-        </Button>
-      </div>
+      <h1 className="text-xl font-bold text-gray-900">Disponibilités</h1>
 
       {isLoading ? (
         <div className="flex justify-center py-10">
@@ -207,6 +208,15 @@ export default function AvailabilityPage() {
           onAdded={() => { qc.invalidateQueries({ queryKey: ['availability'] }); setShowAdd(false); }}
         />
       )}
+
+      <motion.button
+        onClick={() => setShowAdd(true)}
+        whileTap={{ scale: 0.93 }}
+        className="fixed bottom-20 right-4 z-40 flex items-center gap-2 rounded-2xl bg-primary-600 px-5 py-3.5 text-sm font-semibold text-white shadow-lg hover:bg-primary-700 transition-colors cursor-pointer"
+      >
+        <Plus size={18} strokeWidth={2.5} />
+        Ajouter
+      </motion.button>
     </div>
   );
 }
