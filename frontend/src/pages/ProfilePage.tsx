@@ -24,6 +24,8 @@ type ProfileForm = z.infer<typeof profileSchema>;
 function InviteModal({ onClose }: { onClose: () => void }) {
   const [email, setEmail] = useState('');
   const [success, setSuccess] = useState(false);
+  const [inviteToken, setInviteToken] = useState('');
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -31,7 +33,8 @@ function InviteModal({ onClose }: { onClose: () => void }) {
     e.preventDefault();
     setError(''); setLoading(true);
     try {
-      await familiesApi.invite(email);
+      const res = await familiesApi.invite(email) as { token: string };
+      if (res?.token) setInviteToken(res.token);
       setSuccess(true);
     } catch {
       setError('Impossible d\'envoyer l\'invitation.');
@@ -40,14 +43,34 @@ function InviteModal({ onClose }: { onClose: () => void }) {
     }
   }
 
+  function handleCopy() {
+    navigator.clipboard.writeText(inviteToken);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
     <Overlay onClose={onClose}>
       <h2 className="mb-4 text-lg font-bold text-gray-900">Inviter un membre</h2>
       {success ? (
-        <div className="text-center py-4">
-          <p className="text-primary-600 font-semibold">Invitation envoyée !</p>
-          <p className="text-sm text-gray-500 mt-1">Le membre recevra un lien par email.</p>
-          <Button className="mt-4" fullWidth onClick={onClose}>Fermer</Button>
+        <div className="text-center py-2">
+          <p className="text-primary-600 font-semibold mb-2">Code d'invitation généré !</p>
+          <p className="text-sm text-gray-500 mb-4">Envoyez ce code à votre proche pour qu'il rejoigne la famille lors de son inscription :</p>
+          
+          {inviteToken && (
+            <div className="mb-4 rounded-xl bg-gray-50 p-4 border border-gray-200">
+              <code className="text-sm font-bold text-gray-900 break-all select-all">{inviteToken}</code>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2 mt-4">
+            {inviteToken && (
+              <Button type="button" variant="ghost" fullWidth onClick={handleCopy}>
+                {copied ? 'Copié ✓' : 'Copier le code'}
+              </Button>
+            )}
+            <Button fullWidth onClick={onClose}>Fermer</Button>
+          </div>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
