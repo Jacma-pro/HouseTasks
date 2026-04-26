@@ -1,8 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, CheckSquare, CalendarDays, User } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useQueryClient } from '@tanstack/react-query';
-import type { Dashboard } from '../../types';
+import { useQuery } from '@tanstack/react-query';
+import { dashboardApi } from '../../api/dashboard';
 
 const links = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Accueil' },
@@ -12,8 +12,11 @@ const links = [
 ];
 
 export default function BottomNav() {
-  const qc = useQueryClient();
-  const dashboard = qc.getQueryData<Dashboard>(['dashboard']);
+  const { data: dashboard } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: dashboardApi.get,
+    staleTime: 30_000,
+  });
   const pending = dashboard?.tasks.stats.pending ?? 0;
   const inProgress = dashboard?.tasks.stats.in_progress ?? 0;
   const activeCount = pending + inProgress;
