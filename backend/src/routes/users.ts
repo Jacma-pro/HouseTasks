@@ -9,7 +9,7 @@ const router = Router();
 
 const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).optional(),
-  avatar_url: z.string().url().optional(),
+  avatar_url: z.string().max(500).optional(),
 });
 
 // GET /api/users — tous les membres de ma famille
@@ -110,6 +110,63 @@ router.put('/:id', requireAuth, async (req: Request, res: Response, next: NextFu
       res.status(400).json({ error: 'Données invalides', details: error.issues });
       return;
     }
+    next(error);
+  }
+});
+
+// POST /api/users/:id/avatar — upload photo de profil
+router.post('/:id/avatar', requireAuth, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { user } = req as AuthRequest;
+    const { id } = req.params;
+
+    if (id !== user.id) {
+      res.status(403).json({ error: 'Vous ne pouvez modifier que votre propre profil' });
+      return;
+    }
+
+    const { image } = req.body as { image?: string };
+    if (!image || !image.startsWith('data:image/')) {
+      res.status(400).json({ error: 'Image invalide' });
+      return;
+    }
+
+    const [header, base64Data] = image.split(',');
+    const mimeType = header.match(/data:(image\/\w+);base64/)?.[1] ?? 'image/jpeg';
+    const ext = mimeType.split('/')[1];
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    if (buffer.byteLength > 3 * 1024 * 1024) {
+      res.status(400).json({ error: 'Image trop lourde (max 3 Mo)' });
+      return;
+    }
+
+    const filePath = `${id}/avatar.${ext}`;
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from('avatars')
+      .upload(filePath, buffer, { contentType: mimeType, upsert: true });
+
+    if (uploadError) {
+      res.status(400).json({ error: uploadError.message });
+      return;
+    }
+
+    const { data: { publicUrl } } = supabaseAdmin.storage.from('avatars').getPublicUrl(filePath);
+
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .update({ avatar_url: publicUrl })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error || !data) {
+      res.status(400).json({ error: error?.message ?? 'Erreur mise à jour profil' });
+      return;
+    }
+
+    res.json(data);
+  } catch (error) {
     next(error);
   }
 });

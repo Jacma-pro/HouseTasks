@@ -149,8 +149,8 @@ npm run test:coverage  # avec rapport de couverture
 | 3 | Feedback optimiste sur les mutations (changement de statut) | 🔴 Haute | ✅ Fait |
 | 4 | Corriger `due_soon` backend (exclure tâches déjà en retard) | 🟠 Moyenne | ✅ Fait |
 | 5 | TaskRow dashboard → ouvrir directement la tâche | 🟠 Moyenne | ✅ Fait |
-| 6 | Upload d'avatar (photo de profil) | 🟡 Basse | ⏳ À faire |
-| 7 | Recherche de tâches | 🟡 Basse | ⏳ À faire |
+| 6 | Upload d'avatar (photo de profil) | 🟡 Basse | ✅ Fait |
+| 7 | Recherche de tâches | 🟡 Basse | ✅ Fait |
 
 ---
 

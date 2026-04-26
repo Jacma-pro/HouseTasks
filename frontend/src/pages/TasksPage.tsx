@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useDeferredValue, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { Plus, Filter } from 'lucide-react';
+import { Plus, Filter, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { tasksApi, type CreateTaskPayload } from '../api/tasks';
 import { familiesApi } from '../api/families';
@@ -132,12 +132,18 @@ export default function TasksPage() {
   const [filter, setFilter] = useState<TaskStatus | 'all'>('all');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [search, setSearch] = useState('');
+  const deferredSearch = useDeferredValue(search);
   const qc = useQueryClient();
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks', filter],
     queryFn: () => tasksApi.getAll(filter !== 'all' ? { status: filter } : undefined),
   });
+
+  const filteredTasks = deferredSearch.trim()
+    ? tasks.filter(t => t.title.toLowerCase().includes(deferredSearch.trim().toLowerCase()))
+    : tasks;
 
   const editMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Parameters<typeof tasksApi.update>[1] }) =>
@@ -179,6 +185,27 @@ export default function TasksPage() {
     <div className="flex flex-col px-4 py-6 gap-4">
       <h1 className="text-xl font-bold text-gray-900">Tâches</h1>
 
+      {/* Search */}
+      <div className="relative">
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        <input
+          type="search"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Rechercher une tâche…"
+          className="w-full h-11 rounded-xl border border-gray-200 bg-white pl-9 pr-9 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none"
+        />
+        {search && (
+          <button
+            onClick={() => setSearch('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
+            aria-label="Effacer"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
       <div className="flex rounded-2xl bg-gray-100 p-1 gap-0.5">
         {STATUSES.map(({ value, label }) => (
           <button
@@ -204,15 +231,15 @@ export default function TasksPage() {
         <div className="flex justify-center py-10">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
         </div>
-      ) : tasks.length === 0 ? (
+      ) : filteredTasks.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-14 text-gray-400">
           <Filter size={36} strokeWidth={1.2} />
-          <p className="text-sm">Aucune tâche trouvée</p>
+          <p className="text-sm">{search ? 'Aucun résultat' : 'Aucune tâche trouvée'}</p>
         </div>
       ) : (
         <AnimatePresence initial={false}>
           <div className="flex flex-col gap-2">
-            {tasks.map((task) => {
+            {filteredTasks.map((task) => {
               const isActive = task.status === 'pending' || task.status === 'in_progress';
               const isOverdue = isActive && task.due_date && new Date(task.due_date) < new Date();
               return (
@@ -233,12 +260,28 @@ export default function TasksPage() {
                         {task.description && (
                           <p className="mt-0.5 text-sm text-gray-500 line-clamp-2">{task.description}</p>
                         )}
-                        {task.due_date && (
-                          <p className={`mt-1 text-xs flex items-center gap-1 ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
-                            {isOverdue && '⚠ '}
-                            Échéance {new Date(task.due_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </p>
-                        )}
+                        <div className="mt-2 flex items-center gap-2">
+                          {task.assignees && task.assignees.length > 0 && (
+                            <div className="flex -space-x-1.5">
+                              {task.assignees.slice(0, 4).map(a => (
+                                <div key={a.id} className="ring-1 ring-white rounded-full">
+                                  <Avatar name={a.name} avatar_url={a.avatar_url} size="xs" />
+                                </div>
+                              ))}
+                              {task.assignees.length > 4 && (
+                                <div className="h-5 w-5 rounded-full bg-gray-200 flex items-center justify-center text-[9px] font-bold text-gray-600 ring-1 ring-white">
+                                  +{task.assignees.length - 4}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {task.due_date && (
+                            <p className={`text-xs flex items-center gap-0.5 ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
+                              {isOverdue && '⚠ '}
+                              Échéance {new Date(task.due_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
                         <StatusBadge status={task.status} />

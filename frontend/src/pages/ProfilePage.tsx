@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { LogOut, Users, Mail, UserPen, ChevronRight } from 'lucide-react';
+import { LogOut, Users, Mail, UserPen, ChevronRight, Smile } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { familiesApi } from '../api/families';
@@ -14,6 +14,7 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Avatar from '../components/ui/Avatar';
 import Overlay from '../components/ui/Overlay';
+import AvatarPicker from '../components/ui/AvatarPicker';
 
 const profileSchema = z.object({
   name: z.string().min(1, 'Nom requis').max(100),
@@ -71,10 +72,11 @@ function InviteModal({ onClose }: { onClose: () => void }) {
 }
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [showInvite, setShowInvite] = useState(false);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [editSuccess, setEditSuccess] = useState(false);
 
   const { data: family } = useQuery({
@@ -89,12 +91,23 @@ export default function ProfilePage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: { name: string }) =>
+    mutationFn: (data: { name?: string; avatar_url?: string }) =>
       api.put<User>(`/api/users/${user?.id}`, data).then(r => r.data),
-    onSuccess: () => {
+    onSuccess: (updated) => {
+      updateUser({ name: updated.name, avatar_url: updated.avatar_url });
       setEditSuccess(true);
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       setTimeout(() => setEditSuccess(false), 2000);
+    },
+  });
+
+  const avatarMutation = useMutation({
+    mutationFn: (avatarUrl: string) =>
+      api.put<User>(`/api/users/${user?.id}`, { avatar_url: avatarUrl }).then(r => r.data),
+    onSuccess: (updated) => {
+      updateUser({ avatar_url: updated.avatar_url });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      setShowAvatarPicker(false);
     },
   });
 
@@ -107,7 +120,18 @@ export default function ProfilePage() {
     <div className="flex flex-col px-4 py-6 gap-5">
       {/* Avatar + nom */}
       <div className="flex items-center gap-4">
-        {user && <Avatar name={user.name} avatar_url={user.avatar_url} size="lg" />}
+        {user && (
+          <button
+            onClick={() => setShowAvatarPicker(true)}
+            className="relative shrink-0 cursor-pointer group"
+            aria-label="Changer l'avatar"
+          >
+            <Avatar name={user.name} avatar_url={user.avatar_url} size="lg" />
+            <div className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full bg-primary-600 border-2 border-white flex items-center justify-center">
+              <Smile size={10} className="text-white" />
+            </div>
+          </button>
+        )}
         <div>
           <p className="font-bold text-gray-900 text-lg">{user?.name}</p>
           <p className="text-sm text-gray-500">{user?.email}</p>
@@ -169,6 +193,16 @@ export default function ProfilePage() {
       </Button>
 
       {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
+
+      {showAvatarPicker && user && (
+        <AvatarPicker
+          name={user.name}
+          currentAvatarUrl={user.avatar_url}
+          onSave={(avatarUrl) => avatarMutation.mutate(avatarUrl)}
+          onClose={() => setShowAvatarPicker(false)}
+          isSaving={avatarMutation.isPending}
+        />
+      )}
     </div>
   );
 }

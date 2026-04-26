@@ -24,12 +24,13 @@ const statusSchema = z.object({
 
 function transformTask(task: Record<string, unknown>) {
   const { assigned_users, helper_users, ...rest } = task as Record<string, unknown> & {
-    assigned_users: Array<{ user_id: string }>;
+    assigned_users: Array<{ user_id: string; user?: { id: string; name: string; avatar_url?: string } }>;
     helper_users: Array<{ user_id: string }>;
   };
   return {
     ...rest,
     assigned_to: (assigned_users ?? []).map((a) => a.user_id),
+    assignees: (assigned_users ?? []).map((a) => a.user).filter(Boolean),
     helpers: (helper_users ?? []).map((h) => h.user_id),
   };
 }
@@ -48,7 +49,7 @@ router.get('/', requireAuth, async (req: Request, res: Response, next: NextFunct
 
     let query = supabaseAdmin
       .from('tasks')
-      .select('*, assigned_users:task_assignments(user_id), helper_users:task_dependencies(user_id)')
+      .select('*, assigned_users:task_assignments(user_id, user:profiles(id, name, avatar_url)), helper_users:task_dependencies(user_id)')
       .eq('family_id', membership.familyId)
       .order('created_at', { ascending: false });
 

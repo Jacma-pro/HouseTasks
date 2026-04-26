@@ -26,6 +26,12 @@ export interface FamilyMember {
 export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
 export type TaskPriority = 'low' | 'medium' | 'high';
 
+export interface TaskAssignee {
+  id: string;
+  name: string;
+  avatar_url?: string;
+}
+
 export interface Task {
   id: string;
   family_id: string;
@@ -39,6 +45,7 @@ export interface Task {
   created_at: string;
   updated_at: string;
   assigned_to: string[];
+  assignees?: TaskAssignee[];
   helpers: string[];
 }
 
