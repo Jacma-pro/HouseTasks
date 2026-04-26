@@ -34,8 +34,9 @@ router.get('/', requireAuth, async (req: Request, res: Response, next: NextFunct
         .eq('family_id', familyId),
       supabaseAdmin
         .from('tasks')
-        .select('id, title, status, priority, due_date, created_by')
-        .eq('family_id', familyId),
+        .select('id, title, status, priority, due_date, created_by, created_at')
+        .eq('family_id', familyId)
+        .order('created_at', { ascending: false }),
       supabaseAdmin
         .from('task_assignments')
         .select('task_id')
@@ -64,11 +65,25 @@ router.get('/', requireAuth, async (req: Request, res: Response, next: NextFunct
       cancelled: tasks.filter((t) => t.status === 'cancelled').length,
     };
 
+    const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
     const dueSoon = tasks.filter(
       (t) => t.due_date && t.due_date <= in7days && !['completed', 'cancelled'].includes(t.status)
     );
 
     const myTasks = tasks.filter((t) => myTaskIds.has(t.id));
+
+    const active = tasks
+      .filter((t) => t.status === 'pending' || t.status === 'in_progress')
+      .sort((a, b) => {
+        const pDiff = (PRIORITY_ORDER[a.priority] ?? 1) - (PRIORITY_ORDER[b.priority] ?? 1);
+        if (pDiff !== 0) return pDiff;
+        if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
+        if (a.due_date) return -1;
+        if (b.due_date) return 1;
+        return 0;
+      })
+      .slice(0, 8);
 
     res.json({
       family: familyResult.data,
@@ -77,6 +92,7 @@ router.get('/', requireAuth, async (req: Request, res: Response, next: NextFunct
         stats,
         due_soon: dueSoon,
         my_tasks: myTasks,
+        active,
       },
       recent_activity: recentHistoryResult.data ?? [],
     });

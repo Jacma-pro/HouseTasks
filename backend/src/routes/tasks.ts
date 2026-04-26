@@ -142,9 +142,10 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
         family_id: membership.familyId,
         title: body.title,
         description: body.description,
-        priority: body.priority,
+        priority: body.priority ?? 'medium',
         due_date: body.due_date,
         created_by: user.id,
+        status: 'pending',
       })
       .select()
       .single();

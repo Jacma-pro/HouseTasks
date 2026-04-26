@@ -70,6 +70,7 @@ export interface Dashboard {
     stats: TaskStats;
     due_soon: Task[];
     my_tasks: Task[];
+    active: Task[];
   };
   recent_activity: {
     id: string;

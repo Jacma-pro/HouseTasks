@@ -117,28 +117,21 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* Mes tâches */}
+      {/* À faire */}
       <Card>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-900">Mes tâches</h2>
+          <h2 className="font-semibold text-gray-900">À faire</h2>
           <Link to="/tasks" className="text-sm font-medium text-primary-600 hover:underline">
             Voir tout
           </Link>
         </div>
-        {data?.tasks.my_tasks && data.tasks.my_tasks.length > 0 ? (
-          data.tasks.my_tasks.slice(0, 5).map((task) => <TaskRow key={task.id} task={task} />)
+        {data?.tasks.active && data.tasks.active.length > 0 ? (
+          data.tasks.active.map((task) => <TaskRow key={task.id} task={task} />)
         ) : (
-          <p className="py-4 text-center text-sm text-gray-400">Aucune tâche assignée</p>
+          <p className="py-4 text-center text-sm text-gray-400">Rien à faire pour l'instant</p>
         )}
       </Card>
 
-      {/* Échéances proches */}
-      {data?.tasks.due_soon && data.tasks.due_soon.length > 0 && (
-        <Card>
-          <h2 className="font-semibold text-gray-900 mb-3">Échéances cette semaine</h2>
-          {data.tasks.due_soon.slice(0, 3).map((task) => <TaskRow key={task.id} task={task} />)}
-        </Card>
-      )}
     </div>
   );
 }
