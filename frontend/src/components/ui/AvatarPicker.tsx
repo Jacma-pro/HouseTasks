@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import Overlay from './Overlay';
-import Avatar from './Avatar';
 
 const EMOJIS = [
   '🐶','🐱','🦊','🐻','🐼','🐨','🦁','🐯',
