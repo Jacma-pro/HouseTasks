@@ -1,12 +1,15 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, Clock, ListTodo, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { dashboardApi } from '../api/dashboard';
+import { tasksApi } from '../api/tasks';
 import { useAuth } from '../context/AuthContext';
 import Card from '../components/ui/Card';
 import { StatusBadge, PriorityBadge } from '../components/ui/Badge';
 import Avatar from '../components/ui/Avatar';
-import type { Task } from '../types';
+import TaskModal from '../components/ui/TaskModal';
+import type { Task, TaskStatus } from '../types';
 
 function StatCard({ label, value, icon, color }: { label: string; value: number; icon: React.ReactNode; color: string }) {
   return (
@@ -22,11 +25,11 @@ function StatCard({ label, value, icon, color }: { label: string; value: number;
   );
 }
 
-function TaskRow({ task }: { task: Task }) {
+function TaskRow({ task, onClick }: { task: Task; onClick: () => void }) {
   const isActive = task.status === 'pending' || task.status === 'in_progress';
   const isOverdue = isActive && task.due_date && new Date(task.due_date) < new Date();
   return (
-    <Link to="/tasks" className="block">
+    <button onClick={onClick} className="w-full text-left">
       <div className="flex items-center justify-between gap-3 min-h-[44px] py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 -mx-4 px-4 transition-colors rounded-xl cursor-pointer">
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium text-gray-900 text-sm">{task.title}</p>
@@ -41,15 +44,44 @@ function TaskRow({ task }: { task: Task }) {
           <StatusBadge status={task.status} />
         </div>
       </div>
-    </Link>
+    </button>
   );
 }
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const qc = useQueryClient();
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard'],
     queryFn: dashboardApi.get,
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: TaskStatus }) =>
+      tasksApi.updateStatus(id, status),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof tasksApi.update>[1] }) =>
+      tasksApi.update(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: tasksApi.delete,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    },
   });
 
   const hour = new Date().getHours();
@@ -128,12 +160,31 @@ export default function DashboardPage() {
           </Link>
         </div>
         {data?.tasks.active && data.tasks.active.length > 0 ? (
-          data.tasks.active.map((task) => <TaskRow key={task.id} task={task} />)
+          data.tasks.active.map((task) => (
+            <TaskRow key={task.id} task={task} onClick={() => setSelectedTask(task)} />
+          ))
         ) : (
           <p className="py-4 text-center text-sm text-gray-400">Rien à faire pour l'instant</p>
         )}
       </Card>
 
+      {selectedTask && (
+        <TaskModal
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onStatusChange={(status) => {
+            statusMutation.mutate({ id: selectedTask.id, status });
+            setSelectedTask(null);
+          }}
+          onDelete={() => {
+            deleteMutation.mutate(selectedTask.id);
+            setSelectedTask(null);
+          }}
+          onEdit={async (data) => {
+            await editMutation.mutateAsync({ id: selectedTask.id, data });
+          }}
+        />
+      )}
     </div>
   );
 }
