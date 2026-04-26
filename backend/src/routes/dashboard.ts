@@ -67,8 +67,9 @@ router.get('/', requireAuth, async (req: Request, res: Response, next: NextFunct
 
     const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
+    const nowIso = now.toISOString();
     const dueSoon = tasks.filter(
-      (t) => t.due_date && t.due_date <= in7days && !['completed', 'cancelled'].includes(t.status)
+      (t) => t.due_date && t.due_date >= nowIso && t.due_date <= in7days && !['completed', 'cancelled'].includes(t.status)
     );
 
     const myTasks = tasks.filter((t) => myTaskIds.has(t.id));

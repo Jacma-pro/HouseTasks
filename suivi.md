@@ -123,7 +123,34 @@ npm run test:coverage  # avec rapport de couverture
 
 ---
 
-## Frontend — État : ⏳ Non commencé
+## Frontend — État : ✅ En cours
+
+### Pages implémentées
+- `LoginPage` ✅
+- `RegisterPage` ✅
+- `OnboardingPage` ✅ (créer / rejoindre famille)
+- `DashboardPage` ✅ (stats, membres, À faire)
+- `TasksPage` ✅ (segmented control filtre, liste animée, FAB création)
+- `AgendaPage` ✅ (calendrier mensuel, disponibilités par membre)
+- `AvailabilityPage` ✅ (gestion créneaux récurrents / ponctuels)
+- `ProfilePage` ✅ (édition profil, membres famille, invitation)
+
+### Composants UI
+- `Button`, `Input`, `Card`, `Avatar`, `Badge`, `Overlay`, `BottomNav` ✅
+
+---
+
+## Améliorations à faire — Backlog priorisé
+
+| # | Tâche | Priorité | Statut |
+|---|-------|----------|--------|
+| 1 | Édition de tâche (titre, desc, priorité, échéance) depuis le modal | 🔴 Haute | ✅ Fait |
+| 2 | Indicateur visuel de retard (tâche dont l'échéance est dépassée) | 🔴 Haute | ✅ Fait |
+| 3 | Feedback optimiste sur les mutations (changement de statut) | 🔴 Haute | ✅ Fait |
+| 4 | Corriger `due_soon` backend (exclure tâches déjà en retard) | 🟠 Moyenne | ✅ Fait |
+| 5 | TaskRow dashboard → ouvrir directement la tâche | 🟠 Moyenne | ⏳ À faire |
+| 6 | Upload d'avatar (photo de profil) | 🟡 Basse | ⏳ À faire |
+| 7 | Recherche de tâches | 🟡 Basse | ⏳ À faire |
 
 ---
 

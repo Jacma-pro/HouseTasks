@@ -23,14 +23,16 @@ function StatCard({ label, value, icon, color }: { label: string; value: number;
 }
 
 function TaskRow({ task }: { task: Task }) {
+  const isActive = task.status === 'pending' || task.status === 'in_progress';
+  const isOverdue = isActive && task.due_date && new Date(task.due_date) < new Date();
   return (
     <Link to="/tasks" className="block">
       <div className="flex items-center justify-between gap-3 min-h-[44px] py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 -mx-4 px-4 transition-colors rounded-xl cursor-pointer">
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium text-gray-900 text-sm">{task.title}</p>
           {task.due_date && (
-            <p className="text-xs text-gray-400 mt-0.5">
-              Échéance {new Date(task.due_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+            <p className={`text-xs mt-0.5 ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
+              {isOverdue && '⚠ '}Échéance {new Date(task.due_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
             </p>
           )}
         </div>

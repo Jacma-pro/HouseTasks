@@ -139,6 +139,15 @@ export default function TasksPage() {
     queryFn: () => tasksApi.getAll(filter !== 'all' ? { status: filter } : undefined),
   });
 
+  const editMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof tasksApi.update>[1] }) =>
+      tasksApi.update(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: tasksApi.delete,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }).then(() =>
@@ -149,9 +158,21 @@ export default function TasksPage() {
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: TaskStatus }) =>
       tasksApi.updateStatus(id, status),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }).then(() =>
-      qc.invalidateQueries({ queryKey: ['dashboard'] })
-    ),
+    onMutate: async ({ id, status }) => {
+      await qc.cancelQueries({ queryKey: ['tasks'] });
+      const prev = qc.getQueriesData<Task[]>({ queryKey: ['tasks'] });
+      qc.setQueriesData<Task[]>({ queryKey: ['tasks'] }, (old) =>
+        old?.map((t) => t.id === id ? { ...t, status } : t) ?? []
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      ctx?.prev.forEach(([key, data]) => qc.setQueryData(key, data));
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
   });
 
   return (
@@ -191,38 +212,43 @@ export default function TasksPage() {
       ) : (
         <AnimatePresence initial={false}>
           <div className="flex flex-col gap-2">
-            {tasks.map((task) => (
-              <motion.div
-                key={task.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.15 }}
-              >
-                <Card
-                  className="cursor-pointer hover:shadow-card-hover transition-shadow active:scale-[0.99]"
-                  onClick={() => setSelectedTask(task)}
+            {tasks.map((task) => {
+              const isActive = task.status === 'pending' || task.status === 'in_progress';
+              const isOverdue = isActive && task.due_date && new Date(task.due_date) < new Date();
+              return (
+                <motion.div
+                  key={task.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-gray-900 truncate">{task.title}</p>
-                      {task.description && (
-                        <p className="mt-0.5 text-sm text-gray-500 line-clamp-2">{task.description}</p>
-                      )}
-                      {task.due_date && (
-                        <p className="mt-1 text-xs text-gray-400">
-                          Échéance {new Date(task.due_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </p>
-                      )}
+                  <Card
+                    className={`cursor-pointer hover:shadow-card-hover transition-shadow active:scale-[0.99] ${isOverdue ? 'border-red-200 bg-red-50/40' : ''}`}
+                    onClick={() => setSelectedTask(task)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-gray-900 truncate">{task.title}</p>
+                        {task.description && (
+                          <p className="mt-0.5 text-sm text-gray-500 line-clamp-2">{task.description}</p>
+                        )}
+                        {task.due_date && (
+                          <p className={`mt-1 text-xs flex items-center gap-1 ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
+                            {isOverdue && '⚠ '}
+                            Échéance {new Date(task.due_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <StatusBadge status={task.status} />
+                        <PriorityBadge priority={task.priority} />
+                      </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <StatusBadge status={task.status} />
-                      <PriorityBadge priority={task.priority} />
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
+                  </Card>
+                </motion.div>
+              );
+            })}
           </div>
         </AnimatePresence>
       )}
@@ -233,6 +259,7 @@ export default function TasksPage() {
           onClose={() => setSelectedTask(null)}
           onStatusChange={(status) => { statusMutation.mutate({ id: selectedTask.id, status }); setSelectedTask(null); }}
           onDelete={() => { deleteMutation.mutate(selectedTask.id); setSelectedTask(null); }}
+          onEdit={async (data) => { await editMutation.mutateAsync({ id: selectedTask.id, data }); }}
         />
       )}
 
